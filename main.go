@@ -10,9 +10,12 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	godotenv.Load()
 	csvFilename := flag.String("csv", "country.csv", "file containing list of countries for covis stats")
 	flag.Parse()
 
@@ -21,7 +24,7 @@ func main() {
 		exit(fmt.Sprintf("failed to open the csv file %s\n", *csvFilename))
 	}
 	//r := csv.NewReader(file)
-
+	key := os.Getenv("HOSTKEY")
 	scanner := bufio.NewScanner(file)
 	scanner.Split(bufio.ScanLines)
 	var list []string
@@ -39,7 +42,7 @@ func main() {
 	countryFound := find(list, val)
 	if countryFound {
 		fmt.Printf("Country %s found. Data fetching please wait...\n", val)
-		APIcall(val)
+		APIcall(val, key)
 	} else {
 		fmt.Printf("Country %s not found. Please enter from list above", val)
 
@@ -64,7 +67,7 @@ func main() {
 }
 
 func find(countries []string, val string) bool {
-	for i, _ := range countries {
+	for i := range countries {
 		if countries[i] == val {
 			return true
 		}
@@ -72,7 +75,7 @@ func find(countries []string, val string) bool {
 	return false
 }
 
-func APIcall(val string) {
+func APIcall(val string, key string) {
 	url := "https://covid-19-data.p.rapidapi.com/country"
 
 	req, _ := http.NewRequest("GET", url, nil)
@@ -82,7 +85,7 @@ func APIcall(val string) {
 	q.Add("name", val)
 	req.URL.RawQuery = q.Encode()
 	req.Header.Add("x-rapidapi-host", "covid-19-data.p.rapidapi.com")
-	req.Header.Add("x-rapidapi-key", "89611c7851msh195755ef7dc1161p1ddc0ejsnef8e72d70806")
+	req.Header.Add("x-rapidapi-key", key)
 
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
